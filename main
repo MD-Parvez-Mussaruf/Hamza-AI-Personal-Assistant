@@ -6,6 +6,9 @@ import webbrowser
 import os
 import requests
 import sys
+from tkinter import *
+from PIL import Image, ImageTk
+from requests_html import HTMLSession
 
 # Initialize the voice engine
 engine = pyttsx3.init('sapi5')
@@ -16,16 +19,10 @@ engine.setProperty('voice', voices[1].id)
 API_KEY = os.getenv('OPENAI_API_KEY')  # Ensure you set this environment variable
 
 def speak(audio):
-    """
-    This method will allow Hamza to speak, It takes our voice as an argument.
-    """
     engine.say(audio)
     engine.runAndWait()
 
 def greetUser():
-    """
-    This method will always greet the user at the start.
-    """
     hour = int(datetime.datetime.now().hour)
     if hour >= 0 and hour < 11:
         speak("Good Morning!")
@@ -36,9 +33,6 @@ def greetUser():
     speak("My name is Hamza, I am your voice assistant. Please tell me how may I help you?")
 
 def takeCommand():
-    """
-    It takes microphone input from the user and returns string output, returns 'None' in case of any problem.
-    """
     r = sr.Recognizer()
     with sr.Microphone() as source:
         print("Listening...")
@@ -58,9 +52,6 @@ def takeCommand():
     return query
 
 def getChatGPTResponse(prompt):
-    """
-    Send the user's query to OpenAI's API and return the response.
-    """
     if not API_KEY:
         return "API key is not set. Please set the OPENAI_API_KEY environment variable."
 
@@ -80,9 +71,6 @@ def getChatGPTResponse(prompt):
         return f"Sorry, I am unable to get a response from ChatGPT at the moment. {e}"
 
 def executeCommand(query):
-    """
-    Executes the given command.
-    """
     query = query.lower()
     if 'wikipedia' in query:
         speak('Searching in Wikipedia...')
@@ -95,8 +83,8 @@ def executeCommand(query):
         webbrowser.open("youtube.com")
     elif 'open google' in query:
         webbrowser.open("google.com")
-    elif 'open university website' in query:
-        webbrowser.open("bahria.edu.pk")
+    elif 'open IST university website' in query:
+        webbrowser.open("ist.edu.bd")
     elif 'open stack overflow' in query or 'open stackoverflow' in query:
         speak("Here you go to Stack Overflow. Happy coding!")
         webbrowser.open("stackoverflow.com")
@@ -119,7 +107,10 @@ def executeCommand(query):
     elif 'open git' in query:
         codePath = "C:\\Program Files\\Git\\git-bash.exe"
         os.startfile(codePath)
-    elif 'quit' in query or 'shut' in query:
+    elif 'weather' in query:
+        weather_report = Weather()
+        speak(f"The current weather is {weather_report}")
+    elif 'quit' in query or 'shut' in query or 'exit' in query:
         speak("Thanks for giving me your time. Goodbye!")
         sys.exit()
     else:
@@ -128,9 +119,6 @@ def executeCommand(query):
         speak(response)
 
 def waitForActivation():
-    """
-    Wait for the user to say "Hi, Hamza", "Hello, Hamza", or "Hamza" to activate the assistant.
-    """
     while True:
         query = takeCommand()
         if query is None:
@@ -139,10 +127,78 @@ def waitForActivation():
             greetUser()
             break
 
+def Weather():
+    s = HTMLSession()
+    query = "patna"
+    url = f'https://www.google.com/search?q=weather+{query}'
+    r = s.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'})
+
+    temp = r.html.find('span#wob_tm', first=True).text
+    unit = r.html.find('div.vk_bk.wob-unit span.wob_t', first=True).text
+    desc = r.html.find('span#wob_dc', first=True).text
+    return temp + " " + unit + " " + desc
+
+def User_send():
+    send = entry1.get()
+    bot = executeCommand(send)
+    text.insert(END, "Me --> " + send + "\n")
+    if bot:
+        text.insert(END, "Bot <-- " + str(bot) + "\n")
+    if bot == "ok sir":
+        root.destroy()
+
+def ask():
+    ask_val = takeCommand()
+    if ask_val:
+        bot_val = executeCommand(ask_val)
+        text.insert(END, "Me --> " + ask_val + "\n")
+        if bot_val:
+            text.insert(END, "Bot <-- " + str(bot_val) + "\n")
+        if bot_val == "ok sir":
+            root.destroy()
+
+def delete_text():
+    text.delete("1.0", "end")
+
+root = Tk()
+root.geometry("550x675")
+root.title("Hamza - Your Personal AI Assistant")
+root.resizable(False, False)
+root.config(bg="#6F8FAF")
+
+# Main Frame
+Main_frame = LabelFrame(root, padx=100, pady=7, borderwidth=3, relief="raised")
+Main_frame.config(bg="#6F8FAF")
+Main_frame.grid(row=0, column=1, padx=55, pady=10)
+
+# Text Label
+Text_label = Label(Main_frame, text="Hamza - Your Personal AI Assistant", font=("Comic Sans MS", 14, "bold"), bg="#356696")
+Text_label.grid(row=0, column=0, padx=20, pady=10)
+
+# Image
+Display_Image = ImageTk.PhotoImage(Image.open("images/hamza_assistant.png"))
+Image_Label = Label(Main_frame, image=Display_Image)
+Image_Label.grid(row=1, column=0, pady=20)
+
+# Add a text widget
+text = Text(root, font=('Courier 10 bold'), bg="#356696")
+text.grid(row=2, column=0)
+text.place(x=100, y=375, width=375, height=100)
+
+# Add an entry widget
+entry1 = Entry(root, justify=CENTER)
+entry1.place(x=100, y=500, width=350, height=30)
+
+# Add buttons
+button1 = Button(root, text="ASK", bg="#356696", pady=16, padx=40, borderwidth=3, relief=SOLID, command=ask)
+button1.place(x=70, y=575)
+
+button2 = Button(root, text="Send", bg="#356696", pady=16, padx=40, borderwidth=3, relief=SOLID, command=User_send)
+button2.place(x=400, y=575)
+
+button3 = Button(root, text="Delete", bg="#356696", pady=16, padx=40, borderwidth=3, relief=SOLID, command=delete_text)
+button3.place(x=225, y=575)
+
 if __name__ == "__main__":
     waitForActivation()
-    while True:
-        query = takeCommand()
-        if query == "None":
-            continue
-        executeCommand(query)
+    root.mainloop()
